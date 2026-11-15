@@ -22,7 +22,8 @@ if (isNil "DB_fnc_jtacRefreshState") then {
             _unit = player;
         };
 
-        private _hasJtacDesignator = "JTAC_L" in (assignedItems [_unit, false, true]);
+        private _hasJtacDesignator = "JTAC_L" in (assignedItems [_unit, false, true])
+            || {"JTAC_Tablet" in ((items _unit) + (assignedItems _unit))};
 
         _unit setVariable ["JTAC", _hasJtacDesignator, true];
 

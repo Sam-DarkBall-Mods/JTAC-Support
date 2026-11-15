@@ -9,8 +9,8 @@ class CfgPatches {
             "cba_main",
             "cba_settings"
         };
-        units[] = {};
-        weapons[] = {"UMPK_launcher"};
+        units[] = {"Item_JTAC_L", "Item_JTAC_Tablet"};
+        weapons[] = {"UMPK_launcher", "JTAC_L", "JTAC_Tablet"};
     };
 };
 class CfgAmmo {
@@ -548,6 +548,24 @@ class CfgWeapons {
         displayName = "JTAC Laserdesignator";
         scope = 2;
     };
+    class UavTerminal_base: ItemCore {
+        class ItemInfo;
+    };
+    // goes in the UAV terminal slot; H opens the tablet
+    class JTAC_Tablet: UavTerminal_base {
+        scope = 2;
+        scopeArsenal = 2;
+        type = 131072;
+        weaponPoolAvailable = 1;
+        canDrop = 1;
+        author = "Sam, DarkBall";
+        displayName = "JTAC Tablet";
+        descriptionShort = "Fire support tablet. Press H to open it.";
+        picture = "\A3\Weapons_F\Data\UI\gear_item_gps_CA.paa";
+        class ItemInfo: ItemInfo {
+            mass = 8;
+        };
+    };
 };
 class CfgNotifications {
     class JtacReloadNotification {
@@ -570,6 +588,19 @@ class CfgVehicles {
             class JTAC_L {
                 count = 1;
                 name = "JTAC_L";
+            };
+        };
+    };
+    class Item_B_UavTerminal;
+    class Item_JTAC_Tablet: Item_B_UavTerminal {
+        displayName = "JTAC Tablet";
+        author = "Sam, DarkBall";
+        scope = 2;
+        scopeCurator = 2;
+        class TransportItems {
+            class JTAC_Tablet {
+                count = 1;
+                name = "JTAC_Tablet";
             };
         };
     };
@@ -611,6 +642,79 @@ class JTAC_ModeButton: RscButton {
     soundPush[] = {"", 0, 1};
     soundClick[] = {"", 0, 1};
     soundEscape[] = {"", 0, 1};
+};
+// tablet screen: Android look, sizes set from jtac_ui.sqf
+class RscText;
+class RscPicture;
+class RscListBox {
+    class ListScrollBar;
+};
+class RscMapControl;
+class JTAC_Text: RscText {
+    style = 0;
+    shadow = 0;
+    font = "RobotoCondensed";
+    sizeEx = 0.03;
+    colorText[] = {0.93, 0.93, 0.93, 1};
+    colorBackground[] = {0, 0, 0, 0};
+};
+class JTAC_TextCenter: JTAC_Text {
+    style = 2;
+};
+class JTAC_TextRight: JTAC_Text {
+    style = 1;
+};
+class JTAC_Picture: RscPicture {
+    style = 2096;
+    colorText[] = {1, 1, 1, 1};
+};
+class JTAC_Touch: RscButton {
+    text = "";
+    shadow = 0;
+    borderSize = 0;
+    offsetX = 0;
+    offsetY = 0;
+    offsetPressedX = 0;
+    offsetPressedY = 0;
+    colorText[] = {0, 0, 0, 0};
+    colorDisabled[] = {0, 0, 0, 0};
+    colorBackground[] = {0, 0, 0, 0};
+    colorBackgroundDisabled[] = {0, 0, 0, 0};
+    colorBackgroundActive[] = {0, 0, 0, 0};
+    colorFocused[] = {0, 0, 0, 0};
+    colorShadow[] = {0, 0, 0, 0};
+    colorBorder[] = {0, 0, 0, 0};
+    soundEnter[] = {"", 0, 1};
+    soundPush[] = {"", 0, 1};
+    soundClick[] = {"", 0, 1};
+    soundEscape[] = {"", 0, 1};
+};
+class JTAC_List: RscListBox {
+    font = "RobotoCondensed";
+    shadow = 0;
+    rowHeight = 0;
+    sizeEx = 0.03;
+    colorBackground[] = {0, 0, 0, 0};
+    colorText[] = {0.88, 0.88, 0.88, 1};
+    colorDisabled[] = {0.5, 0.5, 0.5, 1};
+    colorSelect[] = {1, 1, 1, 1};
+    colorSelect2[] = {1, 1, 1, 1};
+    colorSelectBackground[] = {0.2, 0.71, 0.9, 0.38};
+    colorSelectBackground2[] = {0.2, 0.71, 0.9, 0.38};
+    colorScrollbar[] = {0.55, 0.55, 0.55, 1};
+    period = 0;
+    soundSelect[] = {"", 0.1, 1};
+    class ListScrollBar: ListScrollBar {
+        color[] = {1, 1, 1, 0.3};
+        colorActive[] = {1, 1, 1, 0.55};
+        colorDisabled[] = {1, 1, 1, 0.1};
+    };
+};
+// imagery shows through the map as on a tactical app
+class JTAC_Map: RscMapControl {
+    maxSatelliteAlpha = 0.9;
+    alphaFadeStartScale = 3;
+    alphaFadeEndScale = 3;
 };
 class CfgSounds {
     sounds[] = {};

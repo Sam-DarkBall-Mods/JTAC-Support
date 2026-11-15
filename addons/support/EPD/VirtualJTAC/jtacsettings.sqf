@@ -286,11 +286,18 @@ DB_JTAC_AttackDefaults = [
     ["NIGHT", "Night Signal", 10, 1, "EVEN_SPREAD_PROJECTILES", [["Chemlight_blue", "G_40mm_Smoke"], 8, -0.1, 120]],
 
     // Listed only while the drone's mod is loaded: Geran-3 is the Shahed-238 of
-    // "Geran-2 & Shahed-136", Geran-4 the "Geran-4" mod, Krokus comes with ArmaFPV
+    // "Geran-2 & Shahed-136", Geran-4 and Geran-5 their own mods, Krokus comes
+    // with ArmaFPV. A x5 salvo spreads over the area.
     ["DRONES", "Geran-3", 30, 1, "FIRE_DRONE", ["shahed_238_CSAT", "lk_shahed_dummy_bomb", 1, 140, 4000, 400, 10, 0, 0]],
+    ["DRONES", "Geran-3 x5", 30, 5, "FIRE_DRONE", ["shahed_238_CSAT", "lk_shahed_dummy_bomb", 5, 140, 4000, 400, 60, 0.5, 1.5]],
     ["DRONES", "Geran-4", 30, 1, "FIRE_DRONE", ["m_geran_dummy", "", 1, 80, 2500, 250, 10, 0, 0]],
+    ["DRONES", "Geran-4 x5", 30, 5, "FIRE_DRONE", ["m_geran_dummy", "", 5, 80, 2500, 250, 60, 0.5, 1.5]],
+    ["DRONES", "Geran-5", 30, 1, "FIRE_DRONE", ["kba_Geran5_O", "geran5_dummy_bomb", 1, 160, 5000, 500, 10, 0, 0]],
+    ["DRONES", "Geran-5 x5", 30, 5, "FIRE_DRONE", ["kba_Geran5_O", "geran5_dummy_bomb", 5, 160, 5000, 500, 60, 0.5, 1.5]],
     ["DRONES", "Krokus AP", 20, 1, "FIRE_DRONE", ["O_Crocus_AP", "R_TBG32V_F", 1, 30, 800, 60, 3, 0, 0]],
-    ["DRONES", "Krokus AT", 20, 1, "FIRE_DRONE", ["O_Crocus_AT", "FPV_RPG42_AT", 1, 30, 800, 60, 3, 0, 0]]
+    ["DRONES", "Krokus AP x5", 20, 5, "FIRE_DRONE", ["O_Crocus_AP", "R_TBG32V_F", 5, 30, 800, 60, 40, 0.5, 1.5]],
+    ["DRONES", "Krokus AT", 20, 1, "FIRE_DRONE", ["O_Crocus_AT", "FPV_RPG42_AT", 1, 30, 800, 60, 3, 0, 0]],
+    ["DRONES", "Krokus AT x5", 20, 5, "FIRE_DRONE", ["O_Crocus_AT", "FPV_RPG42_AT", 5, 30, 800, 60, 40, 0.5, 1.5]]
 ];
 
 DB_JTAC_Attacks = DB_JTAC_AttackDefaults select {

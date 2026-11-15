@@ -1,99 +1,136 @@
-DB_JTAC_TABLET_TEXTURE = "\jtac_support\data\ui\81554433_tablet.paa";
+/*
+    The JTAC tablet: a 7" rugged tablet (tools/draw_tablet.py) running a
+    map-centred fires app in the manner of ATAK.
 
-DB_JTAC_IDC_HEADER = 8101;
-DB_JTAC_IDC_STATE = 8102;
-DB_JTAC_IDC_STATUS = 8103;
-DB_JTAC_IDC_MODE_LASER = 8110;
-DB_JTAC_IDC_MODE_MAP = 8111;
-DB_JTAC_IDC_CATEGORY_LIST = 8120;
-DB_JTAC_IDC_ATTACK_LIST = 8121;
-DB_JTAC_IDC_MAP_STATUS = 8130;
+    Layout is in design pixels of a 1920x1080 screen; the display of the
+    tablet is 1131 x 707 of them, from (395, 187).
+*/
 
-JTAC_TabletGetLayout = {
-    private _tabletH = safeZoneH * 0.94;
-    private _tabletW = _tabletH * 2;
-    private _maxW = safeZoneWAbs * 1.1;
+DB_jtacUi = "\jtac_support\data\ui\tablet\";
 
-    if (_tabletW > _maxW) then {
-        _tabletW = _maxW;
-        _tabletH = _tabletW / 2;
+DB_jtacText = [0.93, 0.93, 0.93, 1];
+DB_jtacLabel = [0.58, 0.6, 0.63, 1];
+DB_jtacPane = [0.105, 0.108, 0.115, 0.97];
+DB_jtacButton = [0.2, 0.205, 0.215, 1];
+DB_jtacPressed = [0.2, 0.71, 0.9, 0.55];
+DB_jtacAccent = [0.2, 0.71, 0.9, 1];
+DB_jtacFire = [0.76, 0.19, 0.13, 1];
+DB_jtacBar = [0, 0, 0, 0.62];
+
+// ---------------------------------------------------------------- layout
+
+JTAC_TabletRect = {
+    params ["_x", "_y", "_w", "_h"];
+    private _k = (safeZoneW / (1920 * pixelW)) min (safeZoneH / (1080 * pixelH));
+    [
+        safeZoneX + safeZoneW / 2 + (_x - 960) * _k * pixelW,
+        safeZoneY + safeZoneH / 2 + (_y - 540) * _k * pixelH,
+        _w * _k * pixelW,
+        _h * _k * pixelH
+    ]
+};
+
+JTAC_TabletScreen = {
+    params ["_x", "_y", "_w", "_h"];
+    [395 + _x, 187 + _y, _w, _h] call JTAC_TabletRect
+};
+
+JTAC_TabletPx = {
+    _this * ((safeZoneW / (1920 * pixelW)) min (safeZoneH / (1080 * pixelH))) * pixelH
+};
+
+// A control at a rect of the display (or of the whole design screen)
+JTAC_TabletCtrl = {
+    disableSerialization;
+    params ["_display", "_class", "_rect", ["_text", ""], ["_size", 18], ["_color", DB_jtacText], ["_bg", [0, 0, 0, 0]], ["_font", "RobotoCondensed"], ["_onScreen", true]];
+    private _ctrl = _display ctrlCreate [_class, -1];
+    _ctrl ctrlSetPosition (_rect call ([JTAC_TabletRect, JTAC_TabletScreen] select _onScreen));
+    if (_text != "") then {_ctrl ctrlSetText _text};
+    _ctrl ctrlSetFont _font;
+    _ctrl ctrlSetFontHeight (_size call JTAC_TabletPx);
+    _ctrl ctrlSetTextColor _color;
+    _ctrl ctrlSetBackgroundColor _bg;
+    _ctrl ctrlCommit 0;
+    _ctrl
+};
+
+// A flat button that lights while it is held; _label is text or an icon
+JTAC_TabletTouch = {
+    disableSerialization;
+    params ["_display", "_rect", "_label", "_action", ["_bg", DB_jtacButton], ["_size", 18], ["_color", DB_jtacText]];
+    private _isIcon = (_label find ".paa") > 0;
+    private _face = [_display, "JTAC_TextCenter", _rect, ["", _label] select !_isIcon, _size, _color, _bg, "RobotoCondensedBold"] call JTAC_TabletCtrl;
+    if (_isIcon) then {
+        _rect params ["_x", "_y", "_w", "_h"];
+        private _s = (_w min _h) * 0.6;
+        _face setVariable ["DB_icon", [_display, "JTAC_Picture", [_x + (_w - _s) / 2, _y + (_h - _s) / 2, _s, _s], _label, 0, _color] call JTAC_TabletCtrl];
     };
+    private _hit = [_display, "JTAC_Touch", _rect] call JTAC_TabletCtrl;
+    _hit setVariable ["DB_face", _face];
+    _hit setVariable ["DB_bg", _bg];
+    _hit setVariable ["DB_action", _action];
+    _hit ctrlAddEventHandler ["MouseButtonDown", {
+        params ["_hit", "_button"];
+        if (_button != 0) exitWith {};
+        (_hit getVariable "DB_face") ctrlSetBackgroundColor DB_jtacPressed;
+        [ctrlParent _hit] call JTAC_TabletBlinkDrive;
+    }];
+    {
+        _hit ctrlAddEventHandler [_x, {
+            params ["_hit"];
+            (_hit getVariable "DB_face") ctrlSetBackgroundColor (_hit getVariable "DB_bg");
+        }];
+    } forEach ["MouseButtonUp", "MouseExit"];
+    _hit ctrlAddEventHandler ["ButtonClick", {
+        params ["_hit"];
+        [ctrlParent _hit, _hit] call (_hit getVariable "DB_action");
+    }];
+    _hit
+};
 
-    private _tabletX = safeZoneXAbs + ((safeZoneWAbs - _tabletW) / 2);
-    private _tabletY = safeZoneY + ((safeZoneH - _tabletH) / 2);
-
-    private _screenX = _tabletX + (_tabletW * 0.318);
-    private _screenY = _tabletY + (_tabletH * 0.225);
-    private _screenW = _tabletW * 0.359;
-    private _screenH = _tabletH * 0.515;
-
-    [[_tabletX, _tabletY, _tabletW, _tabletH], [_screenX, _screenY, _screenW, _screenH]]
+// The drive LED flickers on every touch, as the tablet's storage does
+JTAC_TabletBlinkDrive = {
+    params ["_display"];
+    [_display getVariable ["DB_JTAC_DriveLed", controlNull]] spawn {
+        disableSerialization;
+        params ["_led"];
+        if (isNull _led) exitWith {};
+        _led ctrlShow true;
+        uiSleep (0.06 + random 0.08);
+        if (!isNull _led) then {_led ctrlShow false};
+    };
 };
 
 JTAC_TabletDirectionText = {
-    if (JtacIncomingAngle isEqualTo "RANDOM") exitWith { "RANDOM" };
-
-    switch (JtacIncomingAngle) do {
-        case 0: { "NORTH" };
-        case 45: { "NORTHEAST" };
-        case 90: { "EAST" };
-        case 135: { "SOUTHEAST" };
-        case 180: { "SOUTH" };
-        case 225: { "SOUTHWEST" };
-        case 270: { "WEST" };
-        case 315: { "NORTHWEST" };
-        default { format ["%1 DEG", round JtacIncomingAngle] };
-    };
+    if (JtacIncomingAngle isEqualTo "RANDOM") exitWith {"RANDOM"};
+    private _names = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+    private _a = round JtacIncomingAngle;
+    format ["%1° %2", [_a, 3] call CBA_fnc_formatNumber, _names select (round (_a / 45) mod 8)]
 };
 
-JTAC_TabletCreateText = {
-    disableSerialization;
-    params ["_display", "_idc", "_position", "_text", "_fontHeight", "_textColor", "_backgroundColor", ["_font", "PuristaMedium"]];
-
-    private _ctrl = _display ctrlCreate ["RscText", _idc];
-    _ctrl ctrlSetPosition _position;
-    _ctrl ctrlSetText _text;
-    _ctrl ctrlSetFont _font;
-    _ctrl ctrlSetFontHeight _fontHeight;
-    _ctrl ctrlSetTextColor _textColor;
-    _ctrl ctrlSetBackgroundColor _backgroundColor;
-    _ctrl ctrlCommit 0;
-    (_ctrl)
+JTAC_TabletSetMode = {
+    params ["_display", "_mode"];
+    JtacTargetingMethod = _mode;
+    (_display getVariable ["DB_JTAC_ModeIcon", controlNull]) ctrlSetText (DB_jtacUi + (["icon_laser.paa", "icon_map.paa"] select (_mode == "MAP")));
+    [_display, format ["Targeting: %1", _mode]] call JTAC_TabletMessage;
 };
 
-JTAC_TabletCreateStructuredText = {
-    disableSerialization;
-    params ["_display", "_idc", "_position", "_text", "_backgroundColor"];
-
-    private _ctrl = _display ctrlCreate ["RscStructuredText", _idc];
-    _ctrl ctrlSetPosition _position;
-    _ctrl ctrlSetBackgroundColor _backgroundColor;
-    _ctrl ctrlSetStructuredText parseText _text;
-    _ctrl ctrlCommit 0;
-    (_ctrl)
+JTAC_TabletMessage = {
+    params ["_display", "_text"];
+    private _ctrl = _display getVariable ["DB_JTAC_Message", controlNull];
+    if (!isNull _ctrl) then {_ctrl ctrlSetText _text};
 };
 
-JTAC_TabletCreateButton = {
+// ---------------------------------------------------------------- display
+
+JTAC_TabletOpen = {
     disableSerialization;
-    params ["_display", "_idc", "_position", "_text", ["_tooltip", ""]];
+    params [["_view", "main"]];
 
-    private _ctrl = _display ctrlCreate ["JTAC_TabletButton", _idc];
-    _ctrl ctrlSetPosition _position;
-    _ctrl ctrlSetText _text;
-    _ctrl ctrlSetTooltip _tooltip;
-    _ctrl ctrlCommit 0;
-    (_ctrl)
-};
+    private _old = uiNamespace getVariable ["DB_JTAC_TabletDisplay", displayNull];
+    if (!isNull _old) then {_old closeDisplay 2};
 
-JTAC_TabletCreateBase = {
-    disableSerialization;
-
-    private _oldDisplay = uiNamespace getVariable ["DB_JTAC_TabletDisplay", displayNull];
-    if !(isNull _oldDisplay) then {
-        _oldDisplay closeDisplay 2;
-    };
-
-    private _display = findDisplay 46 createDisplay "RscDisplayEmpty";
+    private _display = (findDisplay 46) createDisplay "RscDisplayEmpty";
     uiNamespace setVariable ["DB_JTAC_TabletDisplay", _display];
     _display displayAddEventHandler ["Unload", {
         params ["_display"];
@@ -102,279 +139,344 @@ JTAC_TabletCreateBase = {
         };
     }];
 
-    private _layout = call JTAC_TabletGetLayout;
-    _layout params ["_tabletPos", "_screen"];
-    _display setVariable ["DB_JTAC_TabletLayout", _layout];
-
     private _shade = _display ctrlCreate ["RscText", -1];
     _shade ctrlSetPosition [safeZoneXAbs, safeZoneY, safeZoneWAbs, safeZoneH];
     _shade ctrlSetBackgroundColor [0, 0, 0, 0.45];
     _shade ctrlCommit 0;
 
-    private _tabletPicture = _display ctrlCreate ["RscPictureKeepAspect", -1];
-    _tabletPicture ctrlSetPosition _tabletPos;
-    _tabletPicture ctrlSetText DB_JTAC_TABLET_TEXTURE;
-    _tabletPicture ctrlCommit 0;
+    [_display, "JTAC_Picture", [-50, 35, 2020, 1010], DB_jtacUi + "body.paa", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
 
-    private _screenBg = _display ctrlCreate ["RscText", -1];
-    _screenBg ctrlSetPosition _screen;
-    _screenBg ctrlSetBackgroundColor [0.015, 0.04, 0.025, 0.88];
-    _screenBg ctrlCommit 0;
+    // map under everything on the display
+    private _map = [_display, "JTAC_Map", [0, 28, 1131, 679]] call JTAC_TabletCtrl;
+    _display setVariable ["DB_JTAC_Map", _map];
+    _map ctrlMapSetPosition ([0, 28, 1131, 679] call JTAC_TabletScreen);
+    _map ctrlAddEventHandler ["Draw", {call JTAC_TabletDraw}];
+    _map ctrlAddEventHandler ["MouseButtonClick", {call JTAC_TabletMapClick}];
 
-    _screen params ["_sx", "_sy", "_sw", "_sh"];
+    // status bar
+    [_display, "JTAC_Text", [0, 0, 1131, 28], "", 16, DB_jtacText, [0, 0, 0, 0.92]] call JTAC_TabletCtrl;
+    _display setVariable ["DB_JTAC_Clock", [_display, "JTAC_Text", [12, 0, 120, 28], "", 20, DB_jtacText, [0, 0, 0, 0], "RobotoCondensedBold"] call JTAC_TabletCtrl];
+    {
+        _x params ["_icon", "_xPos"];
+        [_display, "JTAC_Picture", [_xPos, 4, 20, 20], DB_jtacUi + _icon] call JTAC_TabletCtrl;
+    } forEach [["icon_gps.paa", 1052], ["icon_signal.paa", 1076], ["icon_battery.paa", 1100]];
 
-    [_display, DB_JTAC_IDC_HEADER, [_sx + _sw * 0.025, _sy + _sh * 0.025, _sw * 0.58, _sh * 0.075], "VIRTUAL JTAC", _sh * 0.055, [0.74, 1, 0.72, 1], [0, 0, 0, 0], "PuristaBold"] call JTAC_TabletCreateText;
-    [_display, DB_JTAC_IDC_STATE, [_sx + _sw * 0.025, _sy + _sh * 0.105, _sw * 0.95, _sh * 0.055], "", _sh * 0.034, [0.62, 0.78, 0.64, 1], [0, 0, 0, 0], "EtelkaMonospacePro"] call JTAC_TabletCreateText;
+    // toolbar
+    [_display, "JTAC_Text", [0, 28, 285, 57], "", 18, DB_jtacText, DB_jtacBar] call JTAC_TabletCtrl;
+    {
+        _x params ["_icon", "_action"];
+        private _hit = [_display, [_forEachIndex * 57, 28, 57, 57], DB_jtacUi + _icon, _action, [0, 0, 0, 0]] call JTAC_TabletTouch;
+        if (_forEachIndex == 2) then {_display setVariable ["DB_JTAC_ModeIcon", (_hit getVariable "DB_face") getVariable "DB_icon"]};
+    } forEach [
+        ["icon_menu.paa", {params ["_display"]; [_display, "main"] call JTAC_TabletPane}],
+        ["icon_fires.paa", {params ["_display"]; [_display, "main"] call JTAC_TabletPane}],
+        [["icon_laser.paa", "icon_map.paa"] select (JtacTargetingMethod == "MAP"), {
+            params ["_display"];
+            [_display, ["MAP", "LASER"] select (JtacTargetingMethod == "MAP")] call JTAC_TabletSetMode;
+            [_display, _display getVariable ["DB_JTAC_View", "main"]] call JTAC_TabletPane;
+        }],
+        ["icon_dir.paa", {params ["_display"]; [_display, "dir"] call JTAC_TabletPane}],
+        ["icon_status.paa", {params ["_display"]; [_display, "status"] call JTAC_TabletPane}]
+    ];
 
-    private _close = [_display, -1, [_sx + _sw * 0.91, _sy + _sh * 0.025, _sw * 0.065, _sh * 0.07], "X", "Close tablet"] call JTAC_TabletCreateButton;
-    _close ctrlAddEventHandler ["ButtonClick", {
-        (ctrlParent (_this select 0)) closeDisplay 2;
+    // map controls down the left edge
+    [_display, "JTAC_Picture", [10, 96, 50, 50], DB_jtacUi + "icon_north.paa"] call JTAC_TabletCtrl;
+    [_display, [10, 156, 50, 50], DB_jtacUi + "icon_self.paa", {
+        params ["_display"];
+        private _map = _display getVariable "DB_JTAC_Map";
+        _map ctrlMapAnimAdd [0.4, ctrlMapScale _map, getPosATL player];
+        ctrlMapAnimCommit _map;
+    }, DB_jtacBar] call JTAC_TabletTouch;
+    {
+        _x params ["_icon", "_factor", "_y"];
+        private _btn = [_display, [10, _y, 50, 50], DB_jtacUi + _icon, {
+            params ["_display", "_hit"];
+            private _map = _display getVariable "DB_JTAC_Map";
+            private _scale = ((ctrlMapScale _map) * (_hit getVariable "DB_factor")) max 0.002 min 1;
+            ctrlPosition _map params ["_mx", "_my", "_mw", "_mh"];
+            _map ctrlMapAnimAdd [0.25, _scale, _map ctrlMapScreenToWorld [_mx + _mw / 2, _my + _mh / 2]];
+            ctrlMapAnimCommit _map;
+            uiNamespace setVariable ["DB_JTAC_MapScale", _scale];
+        }, DB_jtacBar] call JTAC_TabletTouch;
+        _btn setVariable ["DB_factor", _factor];
+    } forEach [["icon_plus.paa", 0.6, 222], ["icon_minus.paa", 1.6, 274]];
+
+    // own position, bottom right of the map; messages bottom left
+    [_display, "JTAC_Text", [433, 589, 290, 110], "", 15, DB_jtacText, DB_jtacBar] call JTAC_TabletCtrl;
+    private _self = [];
+    for "_i" from 0 to 3 do {
+        _self pushBack ([_display, "JTAC_Text", [443, 593 + _i * 26, 275, 26], "", 19, [DB_jtacText, DB_jtacAccent] select (_i == 0)] call JTAC_TabletCtrl);
+    };
+    _display setVariable ["DB_JTAC_SelfLines", _self];
+    _display setVariable ["DB_JTAC_Message", [_display, "JTAC_Text", [10, 668, 410, 32], "", 20, DB_jtacText, [0, 0, 0, 0], "RobotoCondensedBold"] call JTAC_TabletCtrl];
+    private _banner = [_display, "JTAC_TextCenter", [180, 98, 380, 46], "", 23, [0, 0, 0, 1], [1, 0.8, 0.2, 0.92], "RobotoCondensedBold"] call JTAC_TabletCtrl;
+    _banner ctrlShow false;
+    _display setVariable ["DB_JTAC_Banner", _banner];
+
+    // LEDs over the body: power and battery lit, drive on activity
+    [_display, "JTAC_Picture", [1572, 194, 40, 40], DB_jtacUi + "led_green.paa", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
+    [_display, "JTAC_Picture", [1572, 258, 40, 40], DB_jtacUi + "led_green.paa", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
+    private _drive = [_display, "JTAC_Picture", [1572, 226, 40, 40], DB_jtacUi + "led_amber.paa", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
+    _drive ctrlShow false;
+    _display setVariable ["DB_JTAC_DriveLed", _drive];
+
+    // home key: back to the fires page, or off
+    private _home = [_display, "JTAC_Picture", [918, 913, 84, 42], DB_jtacUi + "home_up.paa", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
+    private _homeHit = [_display, "JTAC_Touch", [928, 916, 64, 36], "", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
+    _homeHit setVariable ["DB_key", _home];
+    _homeHit ctrlAddEventHandler ["MouseButtonDown", {
+        params ["_hit", "_button"];
+        if (_button == 0) then {(_hit getVariable "DB_key") ctrlSetText (DB_jtacUi + "home_down.paa")};
+    }];
+    {
+        _homeHit ctrlAddEventHandler [_x, {
+            params ["_hit"];
+            (_hit getVariable "DB_key") ctrlSetText (DB_jtacUi + "home_up.paa");
+        }];
+    } forEach ["MouseButtonUp", "MouseExit"];
+    _homeHit ctrlAddEventHandler ["ButtonClick", {
+        params ["_hit"];
+        private _display = ctrlParent _hit;
+        switch (_display getVariable ["DB_JTAC_View", "main"]) do {
+            case "main": {_display closeDisplay 2};
+            case "pick": {_display closeDisplay 2};
+            default {[_display, "main"] call JTAC_TabletPane};
+        };
     }];
 
-    [_display] call JTAC_TabletRefreshHeader;
-    (_display)
+    [_display, _view] call JTAC_TabletPane;
+    _display
 };
 
-JTAC_TabletRefreshHeader = {
-    disableSerialization;
-    params ["_display"];
+// ---------------------------------------------------------------- map
 
-    private _state = _display displayCtrl DB_JTAC_IDC_STATE;
-    if !(isNull _state) then {
-        private _availabilityText = "BUSY";
-        if (JtacAvailable) then {
-            _availabilityText = "READY";
-        };
-        _state ctrlSetText format ["MODE %1 | DIR %2 | %3", JtacTargetingMethod, call JTAC_TabletDirectionText, _availabilityText];
+JTAC_TabletDraw = {
+    params ["_map"];
+    private _display = ctrlParent _map;
+    if !(_map getVariable ["DB_centred", false]) exitWith {
+        _map setVariable ["DB_centred", true];
+        _map ctrlMapAnimAdd [0, uiNamespace getVariable ["DB_JTAC_MapScale", 0.12], getPosATL player];
+        ctrlMapAnimCommit _map;
     };
 
+    private _lines = _display getVariable ["DB_JTAC_SelfLines", []];
+    if (_lines isEqualTo []) exitWith {};
+    (_display getVariable ["DB_JTAC_Clock", controlNull]) ctrlSetText ([daytime, "HH:MM"] call BIS_fnc_timeToString);
+    private _grid = mapGridPosition player;
+    private _half = floor (count _grid / 2);
     {
-        _x params ["_idc", "_mode"];
-        private _ctrl = _display displayCtrl _idc;
-        if !(isNull _ctrl) then {
-            private _selected = JtacTargetingMethod == _mode;
-            private _bg = [0.06, 0.09, 0.07, 0.96];
-            private _fg = [0.6, 0.78, 0.62, 1];
-
-            if (_selected) then {
-                _bg = [0.05, 0.45, 0.17, 1];
-                _fg = [0.9, 1, 0.88, 1];
-            };
-
-            _ctrl ctrlSetBackgroundColor _bg;
-            _ctrl ctrlSetTextColor _fg;
-            _ctrl ctrlSetActiveColor _fg;
-            _ctrl ctrlSetDisabledColor _fg;
-            _ctrl ctrlCommit 0;
-        };
+        (_lines select _forEachIndex) ctrlSetText _x;
     } forEach [
-        [DB_JTAC_IDC_MODE_LASER, "LASER"],
-        [DB_JTAC_IDC_MODE_MAP, "MAP"]
+        format ["Callsign: %1", name player],
+        format ["%1 %2", _grid select [0, _half], _grid select [_half]],
+        format ["%1 m MSL", round ((getPosASL player) select 2)],
+        format ["%1°   %2 km/h", [round getDirVisual player, 3] call CBA_fnc_formatNumber, round abs speed vehicle player]
     ];
+
+    _map drawIcon [DB_jtacUi + "icon_selfmark.paa", [1, 1, 1, 1], getPosASLVisual player, 26, 26, getDirVisual player, "", 0];
+
+    private _laser = laserTarget player;
+    if (isNull _laser) then {_laser = laserTarget vehicle player};
+    if (!isNull _laser) then {
+        _map drawIcon [DB_jtacUi + "icon_hostile.paa", [1, 1, 1, 1], getPosASLVisual _laser, 20, 20, 0, " LASER", 2, 0.045, "RobotoCondensedBold", "right"];
+    };
+
+    if ((_display getVariable ["DB_JTAC_View", ""]) == "pick") then {
+        if (jtacIngressSet) then {
+            _map drawIcon ["\A3\ui_f\data\map\markers\handdrawn\start_CA.paa", [0.2, 0.71, 0.9, 1], jtacIngressPosition, 24, 24, 0, " IP", 2, 0.045, "RobotoCondensedBold", "right"];
+        };
+        if (jtacTargetSet) then {
+            _map drawIcon [DB_jtacUi + "icon_hostile.paa", [1, 1, 1, 1], jtacTarget, 22, 22, 0, " TGT", 2, 0.045, "RobotoCondensedBold", "right"];
+            if (jtacIngressSet) then {_map drawArrow [jtacIngressPosition, jtacTarget, [0.2, 0.71, 0.9, 1]]};
+        };
+    };
+
+    private _last = missionNamespace getVariable ["DB_JTAC_LastTarget", []];
+    if (_last isNotEqualTo [] && {time - (_last select 1) < 180}) then {
+        _map drawIcon [DB_jtacUi + "icon_hostile.paa", [1, 1, 1, 0.8], _last select 0, 18, 18, 0, " " + (_last select 2), 2, 0.04, "RobotoCondensed", "right"];
+    };
 };
+
+JTAC_TabletMapClick = {
+    params ["_map", "_button", "_xPos", "_yPos"];
+    private _display = ctrlParent _map;
+    if (_button != 0 || {(_display getVariable ["DB_JTAC_View", ""]) != "pick"}) exitWith {};
+
+    private _pos2D = _map ctrlMapScreenToWorld [_xPos, _yPos];
+    private _pos = [_pos2D select 0, _pos2D select 1, 0];
+    if (!jtacIngressSet) exitWith {
+        jtacIngressPosition = _pos;
+        jtacIngressSet = true;
+        [_display, "pick"] call JTAC_TabletPane;
+    };
+    if (!jtacTargetSet) then {
+        jtacTarget = _pos;
+        jtacTargetSet = true;
+        [_display, "pick"] call JTAC_TabletPane;
+        _display setVariable ["DB_JTAC_MapDone", true];
+    };
+};
+
+// ---------------------------------------------------------------- right pane
 
 JTAC_TabletGetCategories = {
     private _categories = [];
-
     for "_i" from 1 to (count JtacMainMenu - 1) do {
         private _entry = JtacMainMenu select _i;
-        private _name = _entry select 0;
-
-        if !(_name in ["Fire Direction", "Targeting Method", "Reload Status"]) then {
-            private _subLink = _entry select 2;
-            if (_subLink find "#USER:" == 0) then {
-                private _subVar = _subLink select [6];
-                if (count (missionNamespace getVariable [_subVar, []]) > 1) then {
-                    _categories pushBack [_name, _subVar];
-                };
+        private _link = _entry select 2;
+        if (_link find "#USER:" == 0 && {!((_entry select 0) in ["Fire Direction", "Targeting Method", "Reload Status"])}) then {
+            private _var = _link select [6];
+            if (count (missionNamespace getVariable [_var, []]) > 1) then {
+                _categories pushBack [_entry select 0, _var];
             };
         };
     };
-
-    (_categories)
+    _categories
 };
 
-JTAC_TabletSetStatusLines = {
+JTAC_TabletPane = {
     disableSerialization;
-    params ["_display", "_lines"];
-
-    private _status = _display displayCtrl DB_JTAC_IDC_STATUS;
-    if (isNull _status) exitWith {};
-
-    if (count _lines == 0) then {
-        _lines = ["No status data"];
+    params ["_display", "_view"];
+    if ((_display getVariable ["DB_JTAC_View", ""]) == "pick" && {_view != "pick"}) exitWith {
+        _display closeDisplay 2;
     };
 
-    _status ctrlSetStructuredText parseText format [
-        "<t font='EtelkaMonospacePro' size='0.78' color='#D6F5C9'>%1</t>",
-        (_lines joinString "<br/>")
-    ];
+    {ctrlDelete _x} forEach (_display getVariable ["DB_JTAC_Pane", []]);
+    _display setVariable ["DB_JTAC_View", _view];
+    private _before = allControls _display;
+
+    [_display, "JTAC_Text", [731, 28, 400, 679], "", 18, DB_jtacText, DB_jtacPane] call JTAC_TabletCtrl;
+    private _title = switch (_view) do {
+        case "dir": {"INGRESS"};
+        case "status": {"RELOAD STATUS"};
+        case "pick": {"MAP TARGETING"};
+        default {"FIRE SUPPORT"};
+    };
+    [_display, "JTAC_Text", [747, 32, 270, 50], _title, 28, DB_jtacText, [0, 0, 0, 0], "RobotoCondensedBold"] call JTAC_TabletCtrl;
+    if (_view in ["dir", "status"]) then {
+        [_display, [1071, 34, 46, 46], DB_jtacUi + "icon_back.paa", {params ["_display"]; [_display, "main"] call JTAC_TabletPane}, [0, 0, 0, 0]] call JTAC_TabletTouch;
+    } else {
+        private _ready = JtacAvailable && {_view != "pick"};
+        [_display, "JTAC_TextCenter", [1017, 44, 100, 28], ["BUSY", "READY"] select _ready, 18, [0, 0, 0, 1], [[1, 0.7, 0.2, 1], [0.35, 0.85, 0.4, 1]] select _ready, "RobotoCondensedBold"] call JTAC_TabletCtrl;
+    };
+    [_display, "JTAC_Text", [731, 84, 400, 1], "", 18, DB_jtacText, [0.3, 0.31, 0.33, 1]] call JTAC_TabletCtrl;
+
+    (_display getVariable ["DB_JTAC_Banner", controlNull]) ctrlShow false;
+    [_display, _view] call (missionNamespace getVariable ["JTAC_TabletPane_" + _view, {}]);
+
+    _display setVariable ["DB_JTAC_Pane", (allControls _display) - _before];
 };
 
-JTAC_TabletBuildHome = {
-    disableSerialization;
+JTAC_TabletLabel = {
+    params ["_display", "_y", "_text"];
+    [_display, "JTAC_Text", [747, _y, 360, 22], _text, 17, DB_jtacLabel, [0, 0, 0, 0], "RobotoCondensedBold"] call JTAC_TabletCtrl;
+};
+
+JTAC_TabletPane_main = {
     params ["_display"];
 
-    private _screen = (_display getVariable "DB_JTAC_TabletLayout") select 1;
-    _screen params ["_sx", "_sy", "_sw", "_sh"];
-
-    [_display, -1, [_sx + _sw * 0.025, _sy + _sh * 0.18, _sw * 0.43, _sh * 0.055], "SUPPORT PACKAGES", _sh * 0.035, [0.86, 1, 0.74, 1], [0, 0, 0, 0], "PuristaBold"] call JTAC_TabletCreateText;
-
-    private _catList = _display ctrlCreate ["RscListbox", DB_JTAC_IDC_CATEGORY_LIST];
-    _catList ctrlSetPosition [_sx + _sw * 0.025, _sy + _sh * 0.24, _sw * 0.43, _sh * 0.49];
-    _catList ctrlSetFont "PuristaMedium";
-    _catList ctrlSetFontHeight (_sh * 0.037);
-    _catList ctrlSetBackgroundColor [0.015, 0.03, 0.022, 0.96];
-    _catList ctrlCommit 0;
-
+    [_display, 90, "TARGETING"] call JTAC_TabletLabel;
     {
-        _x params ["_name", "_subVar"];
-        private _idx = _catList lbAdd _name;
-        _catList lbSetData [_idx, _subVar];
-        _catList lbSetColor [_idx, [0.82, 0.95, 0.78, 1]];
-    } forEach (call JTAC_TabletGetCategories);
+        _x params ["_mode", "_xPos"];
+        private _on = JtacTargetingMethod == _mode;
+        private _btn = [_display, [_xPos, 113, 184, 42], _mode, {
+            params ["_display", "_hit"];
+            [_display, _hit getVariable "DB_mode"] call JTAC_TabletSetMode;
+            [_display, "main"] call JTAC_TabletPane;
+        }, [DB_jtacButton, DB_jtacAccent] select _on, 21, [DB_jtacText, [0, 0, 0, 1]] select _on] call JTAC_TabletTouch;
+        _btn setVariable ["DB_mode", _mode];
+    } forEach [["MAP", 747], ["LASER", 933]];
 
-    if ((lbSize _catList) > 0) then {
-        _catList lbSetCurSel 0;
+    [_display, 162, "INGRESS"] call JTAC_TabletLabel;
+    [_display, [747, 185, 370, 42], call JTAC_TabletDirectionText, {
+        params ["_display"];
+        [_display, "dir"] call JTAC_TabletPane;
+    }, DB_jtacButton, 21] call JTAC_TabletTouch;
+
+    // packages as chips: no scrolling for up to twelve of them
+    [_display, 234, "PACKAGE"] call JTAC_TabletLabel;
+    private _cats = call JTAC_TabletGetCategories;
+    private _cat = ((uiNamespace getVariable ["DB_JTAC_Cat", 0]) min (count _cats - 1)) max 0;
+    {
+        _x params ["_name"];
+        private _on = _forEachIndex == _cat;
+        private _short = (_name splitString " ") select 0;
+        if (count _name <= 15) then {_short = _name};
+        private _btn = [_display, [747 + (_forEachIndex % 3) * 126, 257 + floor (_forEachIndex / 3) * 42, 118, 36], _short, {
+            params ["_display", "_hit"];
+            uiNamespace setVariable ["DB_JTAC_Cat", _hit getVariable "DB_index"];
+            uiNamespace setVariable ["DB_JTAC_Attack", 0];
+            [_display, "main"] call JTAC_TabletPane;
+        }, [DB_jtacButton, DB_jtacAccent] select _on, 20, [DB_jtacText, [0, 0, 0, 1]] select _on] call JTAC_TabletTouch;
+        _btn setVariable ["DB_index", _forEachIndex];
+    } forEach _cats;
+
+    private _top = 257 + (ceil ((count _cats max 1) / 3)) * 42 + 4;
+    [_display, _top, "MISSION"] call JTAC_TabletLabel;
+    private _attacks = [_display, "JTAC_List", [747, _top + 23, 370, 618 - _top - 23], "", 23, DB_jtacText, [0, 0, 0, 0.35]] call JTAC_TabletCtrl;
+    private _info = [_display, "JTAC_Text", [747, 618, 370, 26], "", 18, DB_jtacLabel] call JTAC_TabletCtrl;
+    _display setVariable ["DB_JTAC_Attacks", _attacks];
+    _display setVariable ["DB_JTAC_Info", _info];
+
+    _attacks ctrlAddEventHandler ["LBSelChanged", {
+        params ["_attacks", "_index"];
+        uiNamespace setVariable ["DB_JTAC_Attack", _index];
+        [ctrlParent _attacks] call JTAC_TabletShowInfo;
+    }];
+    _attacks ctrlAddEventHandler ["LBDblClick", {
+        params ["_attacks", "_index"];
+        [_attacks, _index] call JTAC_TabletExecuteAttackSelection;
+    }];
+
+    if (_cats isNotEqualTo []) then {
+        private _attackIndex = uiNamespace getVariable ["DB_JTAC_Attack", 0];
+        [_display, (_cats select _cat) select 1] call JTAC_TabletFillAttacks;
+        if (lbSize _attacks > 0) then {_attacks lbSetCurSel (_attackIndex min (lbSize _attacks - 1))};
     };
 
-    _catList ctrlAddEventHandler ["LBDblClick", {
-        params ["_ctrl", "_index"];
-        private _subVar = _ctrl lbData _index;
-        if (_subVar != "") then {
-            (ctrlParent _ctrl) closeDisplay 2;
-            [_subVar] call JTAC_OpenSubMenu;
+    [_display, [747, 648, 370, 52], "REQUEST FIRE", {
+        params ["_display"];
+        private _attacks = _display getVariable "DB_JTAC_Attacks";
+        [_attacks, lbCurSel _attacks] call JTAC_TabletExecuteAttackSelection;
+    }, DB_jtacFire, 24] call JTAC_TabletTouch;
+};
+
+JTAC_TabletFillAttacks = {
+    params ["_display", "_var"];
+    private _attacks = _display getVariable "DB_JTAC_Attacks";
+    lbClear _attacks;
+    private _menu = missionNamespace getVariable [_var, []];
+    for "_i" from 1 to (count _menu - 1) do {
+        private _item = _menu select _i;
+        _attacks lbSetData [_attacks lbAdd (_item select 0), (_item select 4) select 0 select 1];
+    };
+    if (lbSize _attacks > 0) then {_attacks lbSetCurSel 0};
+    [_display] call JTAC_TabletShowInfo;
+};
+
+JTAC_TabletShowInfo = {
+    params ["_display"];
+    private _attacks = _display getVariable "DB_JTAC_Attacks";
+    private _name = _attacks lbText (lbCurSel _attacks);
+    private _attack = EPDJtacAvailableAttacks select {(_x select 1) == _name};
+    private _text = "";
+    if (_attack isNotEqualTo []) then {
+        _attack = _attack select 0;
+        _text = format ["Lock %1 s   Load %2", _attack select 2, _attack select 3];
+        private _numbers = (_attack select 5) select {_x isEqualType 0};
+        if ((_attack select 4) in ["FIRE_DRONE", "SHOOT_PROJECTILES", "DROP_BOMBS", "FIRE_ROCKETS", "STRAFING_RUN_ROCKET", "STRAFING_RUN_PROJECTILE", "LAY_MINE_FIELD"] && {_numbers isNotEqualTo []}) then {
+            _text = format ["%1   x%2", _text, _numbers select 0];
         };
-    }];
-
-    [_display, -1, [_sx + _sw * 0.50, _sy + _sh * 0.18, _sw * 0.24, _sh * 0.055], "TARGETING", _sh * 0.035, [0.86, 1, 0.74, 1], [0, 0, 0, 0], "PuristaBold"] call JTAC_TabletCreateText;
-
-    private _btnLaser = [_display, DB_JTAC_IDC_MODE_LASER, [_sx + _sw * 0.50, _sy + _sh * 0.25, _sw * 0.22, _sh * 0.09], "LASER", "Use laser designator target acquisition"] call JTAC_TabletCreateButton;
-    private _btnMap = [_display, DB_JTAC_IDC_MODE_MAP, [_sx + _sw * 0.745, _sy + _sh * 0.25, _sw * 0.22, _sh * 0.09], "MAP", "Pick ingress and target points on tablet map"] call JTAC_TabletCreateButton;
-
-    _btnLaser ctrlAddEventHandler ["ButtonClick", {
-        JtacTargetingMethod = "LASER";
-        [ctrlParent (_this select 0)] call JTAC_TabletRefreshHeader;
-    }];
-    _btnMap ctrlAddEventHandler ["ButtonClick", {
-        JtacTargetingMethod = "MAP";
-        [ctrlParent (_this select 0)] call JTAC_TabletRefreshHeader;
-    }];
-
-    private _direction = [_display, -1, [_sx + _sw * 0.50, _sy + _sh * 0.37, _sw * 0.465, _sh * 0.09], format ["DIRECTION: %1", call JTAC_TabletDirectionText], "Select fire ingress direction"] call JTAC_TabletCreateButton;
-    _direction ctrlAddEventHandler ["ButtonClick", {
-        (ctrlParent (_this select 0)) closeDisplay 2;
-        [] call JTAC_OpenDirectionMenu;
-    }];
-
-    [_display, DB_JTAC_IDC_STATUS, [_sx + _sw * 0.50, _sy + _sh * 0.49, _sw * 0.465, _sh * 0.24], "<t font='EtelkaMonospacePro' size='0.78' color='#D6F5C9'>Press STATUS to query reload state.</t>", [0.015, 0.03, 0.022, 0.96]] call JTAC_TabletCreateStructuredText;
-
-    private _open = [_display, -1, [_sx + _sw * 0.025, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "OPEN", "Open selected support package"] call JTAC_TabletCreateButton;
-    _open ctrlAddEventHandler ["ButtonClick", {
-        private _display = ctrlParent (_this select 0);
-        private _list = _display displayCtrl DB_JTAC_IDC_CATEGORY_LIST;
-        private _index = lbCurSel _list;
-        if (_index < 0) exitWith { hint "Select a support package first"; };
-
-        private _subVar = _list lbData _index;
-        _display closeDisplay 2;
-        [_subVar] call JTAC_OpenSubMenu;
-    }];
-
-    private _status = [_display, -1, [_sx + _sw * 0.36, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "STATUS", "Query reload status from server"] call JTAC_TabletCreateButton;
-    _status ctrlAddEventHandler ["ButtonClick", {
-        private _display = ctrlParent (_this select 0);
-        [_display, ["Requesting reload state..."]] call JTAC_TabletSetStatusLines;
-        player remoteExec ["GET_RELOAD_STATUS_ARRAY", 2, false];
-    }];
-
-    private _close = [_display, -1, [_sx + _sw * 0.685, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "CLOSE", "Close tablet"] call JTAC_TabletCreateButton;
-    _close ctrlAddEventHandler ["ButtonClick", {
-        (ctrlParent (_this select 0)) closeDisplay 2;
-    }];
-
-    [_display] call JTAC_TabletRefreshHeader;
-};
-
-JTAC_OpenMainUI = {
-    disableSerialization;
-
-    if (!JtacAvailable) exitWith {
-        hint "JTAC currently unavailable (reload in progress)";
     };
-
-    private _display = call JTAC_TabletCreateBase;
-    [_display] call JTAC_TabletBuildHome;
-};
-
-JTAC_OpenSubMenu = {
-    disableSerialization;
-    params ["_subMenuVar"];
-
-    private _subMenu = missionNamespace getVariable [_subMenuVar, []];
-    if (count _subMenu < 2) exitWith {};
-
-    private _display = call JTAC_TabletCreateBase;
-    private _screen = (_display getVariable "DB_JTAC_TabletLayout") select 1;
-    _screen params ["_sx", "_sy", "_sw", "_sh"];
-
-    private _title = _subMenu select 0 select 0;
-    [_display, -1, [_sx + _sw * 0.025, _sy + _sh * 0.18, _sw * 0.72, _sh * 0.06], _title, _sh * 0.04, [0.86, 1, 0.74, 1], [0, 0, 0, 0], "PuristaBold"] call JTAC_TabletCreateText;
-
-    private _list = _display ctrlCreate ["RscListbox", DB_JTAC_IDC_ATTACK_LIST];
-    _list ctrlSetPosition [_sx + _sw * 0.025, _sy + _sh * 0.26, _sw * 0.95, _sh * 0.48];
-    _list ctrlSetFont "PuristaMedium";
-    _list ctrlSetFontHeight (_sh * 0.037);
-    _list ctrlSetBackgroundColor [0.015, 0.03, 0.022, 0.96];
-    _list ctrlCommit 0;
-
-    for "_i" from 1 to (count _subMenu - 1) do {
-        private _item = _subMenu select _i;
-        private _name = _item select 0;
-        private _exprArray = _item select 4;
-        private _expression = _exprArray select 0 select 1;
-
-        private _idx = _list lbAdd _name;
-        _list lbSetData [_idx, _expression];
-        _list lbSetColor [_idx, [0.82, 0.95, 0.78, 1]];
-    };
-
-    if ((lbSize _list) > 0) then {
-        _list lbSetCurSel 0;
-    };
-
-    _list ctrlAddEventHandler ["LBDblClick", {
-        params ["_ctrl", "_index"];
-        [_ctrl, _index] call JTAC_TabletExecuteAttackSelection;
-    }];
-
-    private _back = [_display, -1, [_sx + _sw * 0.025, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "< BACK", "Return to main tablet screen"] call JTAC_TabletCreateButton;
-    _back ctrlAddEventHandler ["ButtonClick", {
-        (ctrlParent (_this select 0)) closeDisplay 2;
-        [] call JTAC_OpenMainUI;
-    }];
-
-    private _fire = [_display, -1, [_sx + _sw * 0.36, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "REQUEST", "Request selected fire mission"] call JTAC_TabletCreateButton;
-    _fire ctrlAddEventHandler ["ButtonClick", {
-        private _display = ctrlParent (_this select 0);
-        private _list = _display displayCtrl DB_JTAC_IDC_ATTACK_LIST;
-        [_list, lbCurSel _list] call JTAC_TabletExecuteAttackSelection;
-    }];
-
-    private _close = [_display, -1, [_sx + _sw * 0.685, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "CLOSE", "Close tablet"] call JTAC_TabletCreateButton;
-    _close ctrlAddEventHandler ["ButtonClick", {
-        (ctrlParent (_this select 0)) closeDisplay 2;
-    }];
+    (_display getVariable "DB_JTAC_Info") ctrlSetText _text;
 };
 
 JTAC_TabletExecuteAttackSelection = {
     disableSerialization;
     params ["_ctrl", "_index"];
-
     if (_index < 0) exitWith {
-        hint "Select a fire mission first";
+        [ctrlParent _ctrl, "Select a fire mission first"] call JTAC_TabletMessage;
     };
-
     private _expression = _ctrl lbData _index;
     if (_expression != "") then {
         (ctrlParent _ctrl) closeDisplay 2;
@@ -382,205 +484,125 @@ JTAC_TabletExecuteAttackSelection = {
     };
 };
 
-JTAC_OpenDirectionMenu = {
-    disableSerialization;
-
-    private _display = call JTAC_TabletCreateBase;
-    private _screen = (_display getVariable "DB_JTAC_TabletLayout") select 1;
-    _screen params ["_sx", "_sy", "_sw", "_sh"];
-
-    [_display, -1, [_sx + _sw * 0.025, _sy + _sh * 0.18, _sw * 0.78, _sh * 0.06], "FIRE DIRECTION", _sh * 0.04, [0.86, 1, 0.74, 1], [0, 0, 0, 0], "PuristaBold"] call JTAC_TabletCreateText;
-
-    private _directions = [
-        ["RANDOM", "RANDOM"],
-        ["N", 0],
-        ["NE", 45],
-        ["E", 90],
-        ["SE", 135],
-        ["S", 180],
-        ["SW", 225],
-        ["W", 270],
-        ["NW", 315]
-    ];
-
-    private _startX = _sx + _sw * 0.08;
-    private _startY = _sy + _sh * 0.29;
-    private _btnW = _sw * 0.25;
-    private _btnH = _sh * 0.105;
-    private _gapX = _sw * 0.04;
-    private _gapY = _sh * 0.035;
-
+JTAC_TabletPane_dir = {
+    params ["_display"];
+    [_display, 92, "FIRE COMES IN FROM"] call JTAC_TabletLabel;
     {
         _x params ["_label", "_value"];
         private _col = _forEachIndex % 3;
         private _row = floor (_forEachIndex / 3);
-        private _button = [_display, -1, [_startX + ((_btnW + _gapX) * _col), _startY + ((_btnH + _gapY) * _row), _btnW, _btnH], _label, "Set fire ingress direction"] call JTAC_TabletCreateButton;
-        _button setVariable ["DB_JTAC_DirectionValue", _value];
-        _button ctrlAddEventHandler ["ButtonClick", {
-            private _button = _this select 0;
-            JtacIncomingAngle = _button getVariable ["DB_JTAC_DirectionValue", "RANDOM"];
-            private _display = ctrlParent _button;
-            [_display] call JTAC_TabletRefreshHeader;
-            hintSilent format ["Fire direction: %1", call JTAC_TabletDirectionText];
-        }];
-    } forEach _directions;
-
-    private _back = [_display, -1, [_sx + _sw * 0.025, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "< BACK", "Return to main tablet screen"] call JTAC_TabletCreateButton;
-    _back ctrlAddEventHandler ["ButtonClick", {
-        (ctrlParent (_this select 0)) closeDisplay 2;
-        [] call JTAC_OpenMainUI;
-    }];
-
-    private _close = [_display, -1, [_sx + _sw * 0.685, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "CLOSE", "Close tablet"] call JTAC_TabletCreateButton;
-    _close ctrlAddEventHandler ["ButtonClick", {
-        (ctrlParent (_this select 0)) closeDisplay 2;
-    }];
+        private _on = JtacIncomingAngle isEqualTo _value;
+        private _btn = [_display, [747 + _col * 126, 122 + _row * 96, 118, 88], _label, {
+            params ["_display", "_hit"];
+            JtacIncomingAngle = _hit getVariable "DB_value";
+            [_display, format ["Ingress: %1", call JTAC_TabletDirectionText]] call JTAC_TabletMessage;
+            [_display, "main"] call JTAC_TabletPane;
+        }, [DB_jtacButton, DB_jtacAccent] select _on, 26, [DB_jtacText, [0, 0, 0, 1]] select _on] call JTAC_TabletTouch;
+        _btn setVariable ["DB_value", _value];
+    } forEach [
+        ["NW", 315], ["N", 0], ["NE", 45],
+        ["W", 270], ["RANDOM", "RANDOM"], ["E", 90],
+        ["SW", 225], ["S", 180], ["SE", 135]
+    ];
+    ([_display, "JTAC_Text", [747, 418, 370, 30], "", 18, DB_jtacLabel] call JTAC_TabletCtrl) ctrlSetText "On the map, the ingress point sets it instead.";
 };
 
-JTAC_TabletSetMapStatus = {
-    disableSerialization;
-    params ["_display", "_text"];
+JTAC_TabletPane_status = {
+    params ["_display"];
+    private _text = [_display, "RscStructuredText", [747, 96, 370, 540], "", 22, DB_jtacText, [0, 0, 0, 0.35]] call JTAC_TabletCtrl;
+    _display setVariable ["DB_JTAC_StatusText", _text];
+    [_display, ["Requesting reload state..."]] call JTAC_TabletSetStatusLines;
+    player remoteExec ["GET_RELOAD_STATUS_ARRAY", 2, false];
+    [_display, [747, 648, 370, 52], "REFRESH", {
+        params ["_display"];
+        [_display, "status"] call JTAC_TabletPane;
+    }, DB_jtacButton, 22] call JTAC_TabletTouch;
+};
 
-    private _ctrl = _display displayCtrl DB_JTAC_IDC_MAP_STATUS;
-    if !(isNull _ctrl) then {
-        _ctrl ctrlSetText _text;
+JTAC_TabletSetStatusLines = {
+    params ["_display", "_lines"];
+    private _ctrl = _display getVariable ["DB_JTAC_StatusText", controlNull];
+    if (isNull _ctrl) exitWith {};
+    if (_lines isEqualTo []) then {_lines = ["No status data"]};
+    _ctrl ctrlSetStructuredText parseText format [
+        "<t font='RobotoCondensed' color='#EDEDED'>%1</t>",
+        _lines joinString "<br/>"
+    ];
+};
+
+JTAC_TabletPane_pick = {
+    params ["_display"];
+    {
+        _x params ["_step", "_label", "_done", "_y"];
+        [_display, "JTAC_TextCenter", [747, _y, 40, 40], _step, 22, [[0, 0, 0, 1], [0, 0, 0, 1]] select _done, [DB_jtacButton, DB_jtacAccent] select _done, "RobotoCondensedBold"] call JTAC_TabletCtrl;
+        [_display, "JTAC_Text", [800, _y, 310, 40], _label, 22, [DB_jtacText, DB_jtacLabel] select _done] call JTAC_TabletCtrl;
+    } forEach [
+        ["1", "Tap the ingress point", jtacIngressSet, 100],
+        ["2", "Tap the target", jtacTargetSet, 152]
+    ];
+    ([_display, "JTAC_Text", [747, 206, 370, 30], "", 18, DB_jtacLabel] call JTAC_TabletCtrl) ctrlSetText "Drag with the right mouse button.";
+
+    private _banner = _display getVariable ["DB_JTAC_Banner", controlNull];
+    _banner ctrlSetText (["TAP INGRESS POINT", "TAP TARGET"] select jtacIngressSet);
+    _banner ctrlShow !jtacTargetSet;
+
+    [_display, [747, 648, 182, 52], "RESET", {
+        params ["_display"];
+        jtacIngressSet = false;
+        jtacTargetSet = false;
+        [_display, "pick"] call JTAC_TabletPane;
+    }, DB_jtacButton, 22] call JTAC_TabletTouch;
+    [_display, [935, 648, 182, 52], "CANCEL", {
+        params ["_display"];
+        _display closeDisplay 2;
+    }, DB_jtacButton, 22] call JTAC_TabletTouch;
+};
+
+// ---------------------------------------------------------------- entry points
+
+JTAC_OpenMainUI = {
+    if (!JtacAvailable) exitWith {
+        hint "JTAC currently unavailable (reload in progress)";
     };
+    ["main"] call JTAC_TabletOpen;
 };
 
 JTAC_TabletGetMapPositions = {
     disableSerialization;
-
     jtacIngressSet = false;
     jtacIngressPosition = [-1, -1, -1];
     jtacTargetSet = false;
     jtacTarget = [-1, -1, -1];
 
-    deleteMarkerLocal "jtacIngressMarker";
-    deleteMarkerLocal "jtacTargetMarker";
-
-    private _display = call JTAC_TabletCreateBase;
+    private _display = ["pick"] call JTAC_TabletOpen;
     _display setVariable ["DB_JTAC_MapDone", false];
-
-    private _screen = (_display getVariable "DB_JTAC_TabletLayout") select 1;
-    _screen params ["_sx", "_sy", "_sw", "_sh"];
-
-    [_display, -1, [_sx + _sw * 0.025, _sy + _sh * 0.17, _sw * 0.64, _sh * 0.055], "MAP TARGETING", _sh * 0.035, [0.86, 1, 0.74, 1], [0, 0, 0, 0], "PuristaBold"] call JTAC_TabletCreateText;
-    [_display, DB_JTAC_IDC_MAP_STATUS, [_sx + _sw * 0.50, _sy + _sh * 0.17, _sw * 0.47, _sh * 0.055], "SELECT INGRESS", _sh * 0.032, [0.74, 1, 0.72, 1], [0, 0, 0, 0], "EtelkaMonospacePro"] call JTAC_TabletCreateText;
-
-    private _map = _display ctrlCreate ["RscMapControl", -1];
-    _map ctrlMapSetPosition [_sx + _sw * 0.025, _sy + _sh * 0.245, _sw * 0.95, _sh * 0.50];
-    _map ctrlMapAnimAdd [0, 0.08, player];
-    ctrlMapAnimCommit _map;
-    _map ctrlMapCursor ["", "Track"];
-    _map ctrlAddEventHandler ["MouseButtonDown", {
-        params ["_map", "_button", "_xPos", "_yPos"];
-
-        if (_button != 0) exitWith { false };
-
-        private _display = ctrlParent _map;
-        private _pos2D = _map ctrlMapScreenToWorld [_xPos, _yPos];
-        private _pos = [_pos2D select 0, _pos2D select 1, 0];
-
-        if (!jtacIngressSet) exitWith {
-            jtacIngressPosition = _pos;
-            jtacIngressSet = true;
-            deleteMarkerLocal "jtacIngressMarker";
-            createMarkerLocal ["jtacIngressMarker", _pos];
-            "jtacIngressMarker" setMarkerTextLocal "Ingress";
-            "jtacIngressMarker" setMarkerTypeLocal "selector_selectable";
-            [_display, "SELECT TARGET"] call JTAC_TabletSetMapStatus;
-            (true)
-        };
-
-        if (!jtacTargetSet) exitWith {
-            jtacTarget = _pos;
-            jtacTargetSet = true;
-            deleteMarkerLocal "jtacTargetMarker";
-            createMarkerLocal ["jtacTargetMarker", _pos];
-            "jtacTargetMarker" setMarkerTextLocal "Target";
-            "jtacTargetMarker" setMarkerTypeLocal "mil_destroy";
-            [_display, "TARGET SENT"] call JTAC_TabletSetMapStatus;
-            _display setVariable ["DB_JTAC_MapDone", true];
-            (true)
-        };
-
-        (true)
-    }];
-
-    private _reset = [_display, -1, [_sx + _sw * 0.025, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "RESET", "Clear map points"] call JTAC_TabletCreateButton;
-    _reset ctrlAddEventHandler ["ButtonClick", {
-        private _display = ctrlParent (_this select 0);
-        jtacIngressSet = false;
-        jtacIngressPosition = [-1, -1, -1];
-        jtacTargetSet = false;
-        jtacTarget = [-1, -1, -1];
-        deleteMarkerLocal "jtacIngressMarker";
-        deleteMarkerLocal "jtacTargetMarker";
-        [_display, "SELECT INGRESS"] call JTAC_TabletSetMapStatus;
-    }];
-
-    private _cancel = [_display, -1, [_sx + _sw * 0.685, _sy + _sh * 0.78, _sw * 0.28, _sh * 0.09], "CANCEL", "Cancel map targeting"] call JTAC_TabletCreateButton;
-    _cancel ctrlAddEventHandler ["ButtonClick", {
-        (ctrlParent (_this select 0)) closeDisplay 2;
-    }];
-
     waitUntil {
         sleep 0.1;
-        (isNull _display) || { _display getVariable ["DB_JTAC_MapDone", false] }
+        (isNull _display) || {_display getVariable ["DB_JTAC_MapDone", false]}
     };
 
-    private _targetAcquired = jtacIngressSet && jtacTargetSet;
     private _result = [false];
-
-    if (_targetAcquired) then {
-        private _posDiff = jtacIngressPosition vectorDiff jtacTarget;
-        private _dX = _posDiff select 0;
-        private _dY = _posDiff select 1;
-        private _ingressDirection = _dX atan2 _dY;
-        _ingressDirection = (_ingressDirection + 360) % 360;
-        JtacIncomingAngle = _ingressDirection;
-
+    if (jtacIngressSet && {jtacTargetSet}) then {
+        private _diff = jtacIngressPosition vectorDiff jtacTarget;
+        JtacIncomingAngle = (((_diff select 0) atan2 (_diff select 1)) + 360) % 360;
         _result = [true, [jtacTarget select 0, jtacTarget select 1, getTerrainHeightASL jtacTarget]];
-
-        [] spawn {
-            sleep 30;
-            deleteMarkerLocal "jtacIngressMarker";
-            deleteMarkerLocal "jtacTargetMarker";
-        };
-    } else {
-        deleteMarkerLocal "jtacIngressMarker";
-        deleteMarkerLocal "jtacTargetMarker";
+        sleep 0.4;
     };
-
-    if !(isNull _display) then {
-        _display closeDisplay 1;
-    };
-
-    (_result)
+    if (!isNull _display) then {_display closeDisplay 1};
+    _result
 };
 
 JTAC_GET_MAP_POSITIONS = {
-    (call JTAC_TabletGetMapPositions)
+    call JTAC_TabletGetMapPositions
 };
 
-if ((isNil "DB_fnc_jtacDisplayReloadStatusSitrep") && { !(isNil "CLIENT_DISPLAY_RELOAD_STATUS") }) then {
+if ((isNil "DB_fnc_jtacDisplayReloadStatusSitrep") && {!(isNil "CLIENT_DISPLAY_RELOAD_STATUS")}) then {
     DB_fnc_jtacDisplayReloadStatusSitrep = CLIENT_DISPLAY_RELOAD_STATUS;
 };
 CLIENT_DISPLAY_RELOAD_STATUS = {
-    disableSerialization;
-
     private _display = uiNamespace getVariable ["DB_JTAC_TabletDisplay", displayNull];
-    if (isNull _display) exitWith {
+    if (isNull _display || {(_display getVariable ["DB_JTAC_View", ""]) != "status"}) exitWith {
         _this spawn BIS_fnc_EXP_camp_SITREP;
     };
-
-    private _lines = [];
-    {
-        private _line = _x select 0;
-        if (_line != "") then {
-            _lines pushBack _line;
-        };
-    } forEach _this;
-
-    [_display, _lines] call JTAC_TabletSetStatusLines;
+    [_display, (_this apply {_x select 0}) select {_x != ""}] call JTAC_TabletSetStatusLines;
 };

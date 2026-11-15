@@ -16,5 +16,5 @@ authors and licenses are to be confirmed before a Workshop release.
 
 ## Optional mods
 
-The Drones menu uses classes from Geran-2 & Shahed-136, Geran-4 and ArmaFPV
-when they are loaded. Nothing from those mods is included.
+The Drones menu uses classes from Geran-2 & Shahed-136, Geran-4, Geran-5 and
+ArmaFPV when they are loaded. Nothing from those mods is included.

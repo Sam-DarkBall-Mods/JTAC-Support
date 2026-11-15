@@ -131,6 +131,7 @@ CLIENT_LOCK_AND_FIRE_AVERAGE_OR_MAP_LOCATION = {
 
     if(_targetAcquired) then {
         private _firemission = format[(_payloadInformation select 3), _targetLocation, call CLIENT_GET_DIRECTION];
+        DB_JTAC_LastTarget = [_targetLocation, time, "TGT"];
         [player, _firemission, _category, _capacityUsed, true, []] remoteExec ["SERVER_PERFORM_FIRE_MISSION", 2, false];
     };
 };
@@ -166,6 +167,7 @@ CLIENT_LOCK_AND_FIRE_LASER_LOCATION = {
         if (_counter >= 100) exitWith {
             hint "Missile is fired. Targeting your laser.";
             private _firemission = format[(_payloadInformation select 3), _laser, call CLIENT_GET_DIRECTION];
+            DB_JTAC_LastTarget = [getPosASL _laser, time, "TGT"];
 
             //0 = _laser spawn {[_this select 0, "M_Titan_AT_long"] call FIRE_GUIDED_MISSILE;}
             [player, _firemission, _category, _capacityUsed, false, [_laser]] remoteExec ["SERVER_PERFORM_FIRE_MISSION", 2, false];
@@ -230,6 +232,7 @@ CLIENT_LOCK_AND_FIRE_VEHICLE = {
         if (_aimedAtTargetCounter >= 100) exitWith {
             hint "Vehicle locked. It is safe to turn off your laser and take cover.";
             private _firemission = format[(_payloadInformation select 3), _currentTarget, call CLIENT_GET_DIRECTION];
+            DB_JTAC_LastTarget = [getPosASL _currentTarget, time, "TGT"];
             [player, _firemission, _category, _capacityUsed, false, [_currentTarget]] remoteExec ["SERVER_PERFORM_FIRE_MISSION", 2, false];
         };
         hintSilent format["Using %6\nCurrent Target: %1\nOn Target: %2\nLock: %3%5\nLock Lost: %4%5", _displayName, _aimedAtCurrentTarget, _aimedAtTargetCounter, _notAimedAtTargetCounter,"%",_designatorName];

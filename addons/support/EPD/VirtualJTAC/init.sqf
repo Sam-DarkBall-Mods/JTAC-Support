@@ -34,7 +34,7 @@ if (isNil "JTAC_KeyCode") then {
 if (!isDedicated) then {
     JtacAvailable = true;
     JtacIncomingAngle = "RANDOM";
-    JtacTargetingMethod = "LASER";
+    JtacTargetingMethod = "MAP";
 
     waitUntil {sleep 0.5; !(isNull player)};
     [] call DB_fnc_jtacRefreshState;

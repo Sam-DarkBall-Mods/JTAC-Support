@@ -19,14 +19,18 @@ check signatures need `keys/db_jtac_support.bikey`.
 - [CBA_A3](https://steamcommunity.com/sharedfiles/filedetails/?id=450814997)
 
 The Drones menu lists only the drones whose mods are loaded: Geran-3 (Shahed-238
-from Geran-2 & Shahed-136), Geran-4, and Krokus AP and AT from ArmaFPV.
+from Geran-2 & Shahed-136), Geran-4, Geran-5, and Krokus AP and AT from
+ArmaFPV. Each comes single or as a salvo of five over the area. A drone goes
+for the vehicle at its aim point and follows it if it drives off.
 
 ## Use
 
-Equip the JTAC Laserdesignator and press H (CBA keybind "Open JTAC Support
-Menu"). Pick a support package, then the target by laser or on the tablet map.
-Every attack's numbers, the reload times and the acquisition time are CBA
-settings under JTAC Support.
+Carry the JTAC Tablet (it goes in the UAV terminal slot) or equip the JTAC
+Laserdesignator, and press H (CBA keybind "Open JTAC Support Menu"). Pick a
+package and a mission and press REQUEST FIRE. In MAP mode, the default, tap
+the ingress point and then the target on the tablet map; in LASER mode, lase
+the target with any designator. Every attack's numbers, the reload times and
+the acquisition time are CBA settings under JTAC Support.
 
 ## Development
 
