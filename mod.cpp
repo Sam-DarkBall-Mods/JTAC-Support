@@ -1,6 +1,6 @@
-name = "DB Example Mod 1.0.0";
+name = "JTAC Support";
 actionName = "GitHub";
-action = "https://github.com/Sam-DarkBall-Mods/mod-template";
-description = "DB Example Mod - Version 1.0.0";
-tooltip = "DB Example Mod";
-author = "DarkBall, Sam, and contributors";
+action = "https://github.com/Sam-DarkBall-Mods/JTAC-Support";
+description = "Call in air strikes, artillery, missiles and attack drones from a JTAC tablet.";
+tooltip = "JTAC Support";
+author = "Sam, DarkBall";

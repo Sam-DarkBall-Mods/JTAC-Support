@@ -1,0 +1,5 @@
+ignore_pboprefix = true
+
+# the models reference vanilla materials HEMTT cannot see; the release keeps them as they are
+[binarize]
+enabled = false

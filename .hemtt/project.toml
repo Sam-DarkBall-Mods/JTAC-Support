@@ -1,7 +1,7 @@
-name = "DB Example Mod"
-prefix = "db_example"
+name = "JTAC Support"
+prefix = "jtac"
 mainprefix = "z"
-author = "DarkBall, Sam, and contributors"
+author = "Sam, DarkBall, and contributors"
 
 [files]
 include = [
@@ -39,7 +39,7 @@ git_hash = 0
 pdrive = "disallow"
 
 [hemtt.release]
-folder = "DB_Example_Mod"
+folder = "JTAC_Support"
 
 [signing]
-authority = "db_example"
+authority = "db_jtac_support"
