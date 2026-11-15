@@ -716,6 +716,38 @@ class JTAC_Map: RscMapControl {
     alphaFadeStartScale = 3;
     alphaFadeEndScale = 3;
 };
+// A clicked control takes focus and is drawn over its layer, so the map sits
+// in the background layer with the shade and the body, under every app control
+class JTAC_TabletDisplay {
+    idd = -1;
+    movingEnable = 0;
+    enableSimulation = 1;
+    class controlsBackground {
+        class Shade: JTAC_Text {
+            idc = 7101;
+            x = "safeZoneXAbs";
+            y = "safeZoneY";
+            w = "safeZoneWAbs";
+            h = "safeZoneH";
+            colorBackground[] = {0, 0, 0, 0.45};
+        };
+        class Body: JTAC_Picture {
+            idc = 7102;
+            text = "";
+            x = 0;
+            y = 0;
+            w = 0;
+            h = 0;
+        };
+        class Map: JTAC_Map {
+            idc = 7103;
+            x = 0;
+            y = 0;
+            w = 0;
+            h = 0;
+        };
+    };
+};
 class CfgSounds {
     sounds[] = {};
     class DB_JTAC_Oreshnik_Flyby_Rok {

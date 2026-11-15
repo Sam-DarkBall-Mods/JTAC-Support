@@ -9,6 +9,7 @@ PARSE_AVAILABLE_JTAC_ATTACKS = {
     private _shells = [];
     private _bombs = [];
     private _rockets = [];
+    private _irbm = [];
     private _guidedMissiles = [];
     private _mines = [];
     private _strafingRun = [];
@@ -41,9 +42,11 @@ PARSE_AVAILABLE_JTAC_ATTACKS = {
             _night set [ count _night, [_currentAttack select 0, _currentAttack select 1, _currentAttack select 2, _currentAttack select 3, _currentAttack select 4, _currentAttack select 5]];
         } else { if(_attackType == "DRONES") then {
             _drones pushBack (_currentAttack select [0, 6]);
+        } else { if(_attackType == "IRBM") then {
+            _irbm pushBack (_currentAttack select [0, 6]);
         } else {
             diag_log format ["VirtualJTAC :::: Ignoring unknown payloadCategory for: %1",  _currentAttack];
-        };};};};};};};};};};
+        };};};};};};};};};};};
     };
 
     JtacMainMenu = [
@@ -138,6 +141,20 @@ PARSE_AVAILABLE_JTAC_ATTACKS = {
 
     if (count JtacRocketsMenu > 1) then {
         JtacMainMenu = JtacMainMenu + [["Rockets and cruise missiles", [_keyNumber], "#USER:JtacRocketsMenu", -5, [["expression", ""]], "1", "1"]];
+        _keyNumber = _keyNumber + 1;
+    };
+
+    JtacIrbmMenu = [["JTAC IRBM", true]];
+    {
+        private _innerExpressionString = format ["[['%1', %2, %3, '[",  _x select 0, _x select 2, _x select 3] +
+                                "%1, %2," +
+                                format["%1", _x select 5] +
+                                format["] call %1;'], 'average'] call CLIENT_REQUEST_PERMISSION_TO_FIRE;", _x select 4];
+        JtacIrbmMenu pushBack [_x select 1, [_forEachIndex + 2], "", -5, [["expression", _innerExpressionString]], "1", "1"];
+    } forEach _irbm;
+
+    if (count JtacIrbmMenu > 1) then {
+        JtacMainMenu = JtacMainMenu + [["IRBM", [_keyNumber], "#USER:JtacIrbmMenu", -5, [["expression", ""]], "1", "1"]];
         _keyNumber = _keyNumber + 1;
     };
 

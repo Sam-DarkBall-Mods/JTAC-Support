@@ -51,6 +51,7 @@ DB_JTAC_ReloadDefaults = [
     ["STRAFINGRUN", "Strafing run", 100, 60, 60],
     ["BOMBS", "Bombs", 100, 1, 1],
     ["ROCKETS", "Rockets and cruise missiles", 100, 1, 1],
+    ["IRBM", "IRBM", 100, 1, 1],
     ["GUIDEDMISSILE", "Guided missiles", 100, 1, 1],
     ["MINES", "Mines", 100, 60, 60],
     ["SMOKE", "Smoke", 100, 60, 60],
@@ -126,7 +127,7 @@ call DB_fnc_jtacApplyReloadSettings;
 /*
     ["payloadCategory", "displayName", "acquireRate", "capacityUsed", "projectileFiringMethod", [firing method parameters...]]
 
-    payloadCategory - One of "BULLETS", "SHELLS", "STRAFINGRUN", "BOMBS", "ROCKETS", "GUIDEDMISSILE", "MINES", "SMOKE", "NIGHT" or "DRONES". Determines which Jtac menu the payload will show up in.
+    payloadCategory - One of "BULLETS", "SHELLS", "STRAFINGRUN", "BOMBS", "ROCKETS", "IRBM", "GUIDEDMISSILE", "MINES", "SMOKE", "NIGHT" or "DRONES". Determines which Jtac menu the payload will show up in.
 
     displayName - Name of the payload that will be presented to the operator.
 
@@ -254,7 +255,8 @@ DB_JTAC_AttackDefaults = [
     ["ROCKETS", "HIMARS", 30, 1, "DROP_BOMBS", ["TORNADOS", 6, 240.55, 0.5, 30, 1, 2, true]],
     ["ROCKETS", "ATACMS", 60, 1, "DROP_BOMBS", ["ISKANDERK", 1, 240.55, 0.2, 7, 0, 0, true]],
     ["ROCKETS", "TOMAHAWK", 60, 1, "FIRE_ROCKETS", ["X101", 1, 3911.5, -17.04, 0.05, 0.05, 0, 0]],
-    ["ROCKETS", "ORESHNIK", 60, 1, "FIRE_ORESHNIK", []],
+
+    ["IRBM", "ORESHNIK", 60, 1, "FIRE_ORESHNIK", []],
 
     ["GUIDEDMISSILE", "Spike LR Laser", 1, 1, "FIRE_GUIDED_MISSILE", ["M_Titan_AT_long", "laser"]],
     ["GUIDEDMISSILE", "Spike LR", 1, 1, "FIRE_GUIDED_MISSILE", ["M_Titan_AT_long", "vehicle"]],

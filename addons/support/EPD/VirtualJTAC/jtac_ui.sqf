@@ -39,11 +39,12 @@ JTAC_TabletPx = {
     _this * ((safeZoneW / (1920 * pixelW)) min (safeZoneH / (1080 * pixelH))) * pixelH
 };
 
-// A control at a rect of the display (or of the whole design screen)
+// A control at a rect of the display (or of the whole design screen);
+// _class may also be a control the display already has
 JTAC_TabletCtrl = {
     disableSerialization;
     params ["_display", "_class", "_rect", ["_text", ""], ["_size", 18], ["_color", DB_jtacText], ["_bg", [0, 0, 0, 0]], ["_font", "RobotoCondensed"], ["_onScreen", true]];
-    private _ctrl = _display ctrlCreate [_class, -1];
+    private _ctrl = if (_class isEqualType "") then {_display ctrlCreate [_class, -1]} else {_class};
     _ctrl ctrlSetPosition (_rect call ([JTAC_TabletRect, JTAC_TabletScreen] select _onScreen));
     if (_text != "") then {_ctrl ctrlSetText _text};
     _ctrl ctrlSetFont _font;
@@ -130,7 +131,7 @@ JTAC_TabletOpen = {
     private _old = uiNamespace getVariable ["DB_JTAC_TabletDisplay", displayNull];
     if (!isNull _old) then {_old closeDisplay 2};
 
-    private _display = (findDisplay 46) createDisplay "RscDisplayEmpty";
+    private _display = (findDisplay 46) createDisplay "JTAC_TabletDisplay";
     uiNamespace setVariable ["DB_JTAC_TabletDisplay", _display];
     _display displayAddEventHandler ["Unload", {
         params ["_display"];
@@ -139,15 +140,8 @@ JTAC_TabletOpen = {
         };
     }];
 
-    private _shade = _display ctrlCreate ["RscText", -1];
-    _shade ctrlSetPosition [safeZoneXAbs, safeZoneY, safeZoneWAbs, safeZoneH];
-    _shade ctrlSetBackgroundColor [0, 0, 0, 0.45];
-    _shade ctrlCommit 0;
-
-    [_display, "JTAC_Picture", [-50, 35, 2020, 1010], DB_jtacUi + "body.paa", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
-
-    // map under everything on the display
-    private _map = [_display, "JTAC_Map", [0, 28, 1131, 679]] call JTAC_TabletCtrl;
+    [_display, _display displayCtrl 7102, [-50, 35, 2020, 1010], DB_jtacUi + "body.paa", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
+    private _map = [_display, _display displayCtrl 7103, [0, 28, 1131, 679]] call JTAC_TabletCtrl;
     _display setVariable ["DB_JTAC_Map", _map];
     _map ctrlMapSetPosition ([0, 28, 1131, 679] call JTAC_TabletScreen);
     _map ctrlAddEventHandler ["Draw", {call JTAC_TabletDraw}];
@@ -220,7 +214,7 @@ JTAC_TabletOpen = {
     _drive ctrlShow false;
     _display setVariable ["DB_JTAC_DriveLed", _drive];
 
-    // home key: back to the fires page, or off
+    // home key: back to the fires page; Esc puts the tablet away
     private _home = [_display, "JTAC_Picture", [918, 913, 84, 42], DB_jtacUi + "home_up.paa", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
     private _homeHit = [_display, "JTAC_Touch", [928, 916, 64, 36], "", 0, [1, 1, 1, 1], [0, 0, 0, 0], "RobotoCondensed", false] call JTAC_TabletCtrl;
     _homeHit setVariable ["DB_key", _home];
@@ -237,11 +231,9 @@ JTAC_TabletOpen = {
     _homeHit ctrlAddEventHandler ["ButtonClick", {
         params ["_hit"];
         private _display = ctrlParent _hit;
-        switch (_display getVariable ["DB_JTAC_View", "main"]) do {
-            case "main": {_display closeDisplay 2};
-            case "pick": {_display closeDisplay 2};
-            default {[_display, "main"] call JTAC_TabletPane};
-        };
+        // a map pick waits on its own display: drop it and open a fresh one
+        if ((_display getVariable ["DB_JTAC_View", "main"]) == "pick") exitWith {["main"] call JTAC_TabletOpen};
+        [_display, "main"] call JTAC_TabletPane;
     }];
 
     [_display, _view] call JTAC_TabletPane;
