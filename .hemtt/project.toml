@@ -7,6 +7,8 @@ author = "Sam, DarkBall, and contributors"
 include = [
     "meta.cpp",
     "mod.cpp",
+    "logo_ca.paa",
+    "picture_co.paa",
 ]
 
 exclude = [

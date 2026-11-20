@@ -1,4 +1,11 @@
 name = "JTAC Support";
+picture = "picture_co.paa";
+logo = "logo_ca.paa";
+logoOver = "logo_ca.paa";
+logoSmall = "logo_ca.paa";
+overviewPicture = "picture_co.paa";
+hideName = 0;
+hidePicture = 0;
 actionName = "GitHub";
 action = "https://github.com/Sam-DarkBall-Mods/JTAC-Support";
 description = "Call in air strikes, artillery, missiles and attack drones from a JTAC tablet.";
